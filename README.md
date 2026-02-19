@@ -504,6 +504,7 @@ router ospf
  write memory
  exit
 ```
+![Screenshot](assets/37.png)
 
 Перезагрузите устройство:
 ```bash
@@ -518,21 +519,34 @@ reboot
 ```bash
 hostnamectl set-hostname hq-cli.au-team.irpo; exec bash
 ```
+![Screenshot](assets/17.png)
+
 
 ### Закомментировать загрузку
 ```bash
 nano /etc/apt/sources.list
 ```
+![Screenshot](assets/2.png)
+
+Отключение systemd-resolved
+```bash
+systemctl disable --now systemd-resolved
+unlink /etc/resolv.conf
+```
+> [!CAUTION]
+> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
 ### Настройка адресов (DHCP)
 ```bash
 nano /etc/network/interfaces
 ```
 ```ini
-allow-hotplug enp0s3
-iface enp0s3 inet dhcp
+allow-hotplug ens192
+iface ens192 inet dhcp
 ```
-> ⚠️ **Важно:** замените `enp0s3` на актуальное имя (ens224, ens256).
+![Screenshot](assets/42.png)
+> [!CAUTION]
+> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
 Перезапустите сеть:
 ```bash
@@ -547,6 +561,7 @@ nano /etc/resolv.conf
 search au-team.irpo
 nameserver 192.168.1.2
 ```
+![Screenshot](assets/54.png)
 
 ---
 
@@ -556,24 +571,44 @@ nameserver 192.168.1.2
 ```bash
 hostnamectl set-hostname hq-srv.au-team.irpo; exec bash
 ```
+![Screenshot](assets/12.png)
 
 ### Закомментировать загрузку
 ```bash
 nano /etc/apt/sources.list
 ```
+![Screenshot](assets/2.png)
+
+Отключение systemd-resolved
+```bash
+systemctl disable --now systemd-resolved
+unlink /etc/resolv.conf
+```
+### Временная настройка DNS серверов 
+```bash
+nano /etc/resolv.conf
+```
+Временное содержимое:
+```
+nameserver 1.1.1.1
+```
+![Screenshot](assets/8.png)
 
 ### Настройка адресов
 ```bash
 nano /etc/network/interfaces
 ```
 ```ini
-auto enp0s3
-iface enp0s3 inet static
+auto ens192
+iface ens192 inet static
 address 192.168.1.2
 netmask 255.255.255.192
 gateway 192.168.1.1
 ```
-> ⚠️ **Важно:** замените `enp0s3` на актуальное имя (ens192).
+![Screenshot](assets/13.png)
+
+> [!CAUTION]
+> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
 Перезапустите сеть:
 ```bash
@@ -584,9 +619,18 @@ systemctl restart networking
 ```bash
 adduser sshuser -u 2026
 # Пароль: P@ssw0rd
-visudo
-# Добавьте: sshuser ALL=(ALL:ALL) ALL
 ```
+![Screenshot](assets/27.png)
+
+Выдайте привилегии через `visudo`:
+```bash
+visudo
+```
+Добавьте строку:
+```
+sshuser ALL=(ALL:ALL) ALL
+```
+![Screenshot](assets/21.png)
 
 ### Настройка SSH
 ```bash
@@ -599,6 +643,8 @@ AllowUsers sshuser
 MaxAuthTries 2
 Banner /etc/ssh-banner
 ```
+![Screenshot](assets/30.png)
+
 Создайте баннер:
 ```bash
 nano /etc/ssh-banner
@@ -606,6 +652,8 @@ nano /etc/ssh-banner
 ```
 Authorized access only
 ```
+![Screenshot](assets/32.png)
+
 Перезапустите SSH:
 ```bash
 systemctl restart sshd
@@ -616,6 +664,7 @@ systemctl restart sshd
 ```bash
 apt install bind9 dnsutils
 ```
+![Screenshot](assets/44.png)
 
 #### 1. Файл `/etc/bind/named.conf.options`
 ```bash
@@ -631,6 +680,7 @@ forwarders { 77.88.8.8; 1.1.1.1; };
 forward only;
 dnssec-validation no;
 ```
+![Screenshot](assets/56.png)
 
 #### 2. Файл `/etc/bind/named.conf.default-zones`
 Добавьте в конец:
@@ -655,6 +705,7 @@ zone "2.168.192.in-addr.arpa" {
     file "/etc/bind/au-team.irpo_hqobr";
 };
 ```
+![Screenshot](assets/49.png)
 
 #### 3. Прямая зона `au-team.irpo`
 Скопируйте шаблон:
@@ -681,6 +732,7 @@ br-srv  IN      A       192.168.4.2
 moodle  IN      CNAME   hq-rtr.au-team.irpo.
 wiki    IN      CNAME   hq-rtr.au-team.irpo.
 ```
+![Screenshot](assets/50.png)
 
 #### 4. Обратная зона для 192.168.1.0/26
 ```bash
@@ -700,6 +752,7 @@ $TTL    604800
 1       IN      PTR     hq-rtr.au-team.irpo.
 2       IN      PTR     hq-srv.au-team.irpo.
 ```
+![Screenshot](assets/51.png)
 
 #### 5. Обратная зона для 192.168.2.0/28
 Скопируйте предыдущую и отредактируйте:
@@ -719,6 +772,7 @@ $TTL    604800
 @       IN      NS      hq-srv.au-team.irpo.
 2       IN      PTR     hq-cli.au-team.irpo.
 ```
+![Screenshot](assets/53.png)
 
 #### 6. Проверка конфигурации
 ```bash
@@ -743,6 +797,7 @@ ss -tulpn | grep :53
 ```bash
 nslookup 192.168.1.2
 ```
+![Screenshot](assets/55.png)
 
 ---
 
@@ -752,24 +807,37 @@ nslookup 192.168.1.2
 ```bash
 hostnamectl set-hostname br-srv.au-team.irpo; exec bash
 ```
+![Screenshot](assets/4.png)
 
 ### Закомментировать загрузку
 ```bash
 nano /etc/apt/sources.list
 ```
+### Временная настройка DNS серверов 
+```bash
+nano /etc/resolv.conf
+```
+Временное содержимое:
+```
+nameserver 1.1.1.1
+```
+![Screenshot](assets/8.png)
 
 ### Настройка адресов
 ```bash
 nano /etc/network/interfaces
 ```
 ```ini
-auto enp0s8
-iface enp0s8 inet static
+auto ens192
+iface ens192 inet static
 address 192.168.4.2
 netmask 255.255.255.240
 gateway 192.168.4.1
 ```
-> ⚠️ **Важно:** замените `enp0s8` на актуальное имя (ens192).
+![Screenshot](assets/15.png)
+
+> [!CAUTION]
+> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
 Перезапустите сеть:
 ```bash
@@ -780,9 +848,19 @@ systemctl restart networking
 ```bash
 adduser sshuser -u 2026
 # Пароль: P@ssw0rd
-visudo
-# Добавьте: sshuser ALL=(ALL:ALL) ALL
 ```
+![Screenshot](assets/19.png)
+
+Выдайте привилегии через `visudo`:
+```bash
+visudo
+```
+Добавьте строку:
+```
+sshuser ALL=(ALL:ALL) ALL
+```
+![Screenshot](assets/21.png)
+
 
 ### Настройка SSH
 ```bash
@@ -794,6 +872,8 @@ AllowUsers sshuser
 MaxAuthTries 2
 Banner /etc/ssh-banner
 ```
+![Screenshot](assets/30.png)
+
 Создайте баннер:
 ```bash
 nano /etc/ssh-banner
@@ -801,6 +881,8 @@ nano /etc/ssh-banner
 ```
 Authorized access only
 ```
+![Screenshot](assets/32.png)
+
 Перезапустите SSH:
 ```bash
 systemctl restart sshd
@@ -808,7 +890,11 @@ systemctl restart sshd
 
 ---
 
-## Заключение
+> [!NOTE]
+> Самое главное, после всего этого, на HQ-RTR, HQ-SRV, HQ-CLI, BR-RTR выставить новый DNS
+```
+search au-team.irpo
+nameserver 192.168.1.2
+```
 
-После выполнения всех шагов проверьте связность между устройствами, работу маршрутизации, DHCP и DNS.  
-При возникновении ошибок сверьте имена интерфейсов и содержимое конфигурационных файлов с техническим заданием.
+![Screenshot](assets/54.png)
