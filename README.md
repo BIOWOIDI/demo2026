@@ -39,12 +39,11 @@ gateway 172.16.2.2
 ```
 ![Screenshot](assets/3.png)
 
-### Отключение systemd-resolved
+Отключение systemd-resolved
 ```bash
 systemctl disable --now systemd-resolved
 unlink /etc/resolv.conf
 ```
-
 > [!CAUTION]
 > Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
@@ -58,6 +57,7 @@ systemctl restart networking
 ```bash
 nano /etc/sysctl.conf
 ```
+![Screenshot](assets/6.png)
 Примените изменения:
 ```bash
 sysctl -p
@@ -65,20 +65,23 @@ sysctl -p
 Установите iptables и настройте NAT:
 ```bash
 apt install iptables iptables-persistent
-iptables -t nat -A POSTROUTING -s 172.16.1.0/28 -o enp0s3 -j MASQUERADE
-iptables -t nat -A POSTROUTING -s 172.16.2.0/28 -o enp0s3 -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 172.16.1.0/28 -o ens192 -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 172.16.2.0/28 -o ens192 -j MASQUERADE
 iptables-save > /etc/iptables/rules.v4
 ```
-> ⚠️ **Важно:** интерфейс `enp0s3` может иметь другое имя (например, `ens192`). Подставьте своё.
+![Screenshot](assets/7.png)
+> [!CAUTION]
+> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
-### Настройка DNS
+### Временная настройка DNS серверов 
 ```bash
 nano /etc/resolv.conf
 ```
-Содержимое:
+Временное содержимое:
 ```
 nameserver 1.1.1.1
 ```
+![Screenshot](assets/8.png)
 Перезагрузите устройство:
 ```bash
 reboot
@@ -92,19 +95,15 @@ reboot
 ```bash
 hostnamectl set-hostname hq-rtr.au-team.irpo; exec bash
 ```
+![Screenshot](assets/5.png)
 
 ### Закомментировать загрузку
 ```bash
 nano /etc/apt/sources.list
 ```
+![Screenshot](assets/2.png)
 
 ### Настройка VLAN и интерфейсов
-Установите поддержку VLAN:
-```bash
-apt install vlan
-modprobe 8021q
-echo 8021q >> /etc/modules
-```
 Отредактируйте `/etc/network/interfaces`:
 ```bash
 nano /etc/network/interfaces
@@ -121,7 +120,47 @@ auto enp0s8
 iface enp0s8 inet static
 address 192.168.1.1
 netmask 255.255.255.192
+```
+> [!CAUTION]
+> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
+> [!CAUTION]
+> Именно до обрезанного момента, если заполните все, конфиг будет ругаться и не сможет скачать VLAN
 
+Отключение systemd-resolved
+```bash
+systemctl disable --now systemd-resolved
+unlink /etc/resolv.conf
+```
+
+
+### Временная настройка DNS серверов 
+```bash
+nano /etc/resolv.conf
+```
+Временное содержимое:
+```
+nameserver 1.1.1.1
+```
+![Screenshot](assets/8.png)
+
+Установите VLAN:
+```bash
+apt install vlan
+```
+![Screenshot](assets/9.png)
+Дайте поддержку VLAN
+```bash
+modprobe 8021q
+echo 8021q >> /etc/modules
+```
+![Screenshot](assets/10.png)
+
+Отредактируйте `/etc/network/interfaces`:
+```bash
+nano /etc/network/interfaces
+```
+Продолжите заполнять содержимое:
+```bash
 auto enp0s8:1
 iface enp0s8:1 inet static
 address 192.168.2.1
@@ -148,6 +187,7 @@ local 172.16.1.2
 endpoint 172.16.2.2
 ttl 64
 ```
+![Screenshot](assets/11.png)
 Перезапустите сеть:
 ```bash
 systemctl restart networking
@@ -158,6 +198,7 @@ systemctl restart networking
 adduser net_admin
 # Пароль: P@ssw0rd
 ```
+![Screenshot](assets/23.png)
 Выдайте привилегии через `visudo`:
 ```bash
 visudo
@@ -166,7 +207,7 @@ visudo
 ```
 net_admin ALL=(ALL:ALL) ALL
 ```
-
+![Screenshot](assets/25.png)
 ### Переадресация (NAT)
 Раскомментируйте `net.ipv4.ip_forward=1` в `/etc/sysctl.conf` и примените:
 ```bash
