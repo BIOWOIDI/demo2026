@@ -24,7 +24,7 @@ unlink /etc/resolv.conf
 ```bash
 hostnamectl set-hostname isp.au-team.irpo; exec bash
 ```
-![Screenshot of hostname ISP.](assets/Снимок экрана 2026-02-09 142228.png)
+![Screenshot of hostname ISP.](assets/1.png)
 ### Закомментировать загрузку (отключение автоматической загрузки репозиториев)
 ```bash
 nano /etc/apt/sources.list
