@@ -5,7 +5,39 @@
 
 ---
 
-## Общие действия на всех устройствах
+## Устройство ISP
+
+### Имя устройства
+```bash
+hostnamectl set-hostname isp.au-team.irpo; exec bash
+```
+![Screenshot](assets/1.png)
+
+### Закомментировать загрузку (отключение автоматической загрузки репозиториев)
+```bash
+nano /etc/apt/sources.list
+```
+![Screenshot](assets/2.png)
+
+### Настройка сетевых адресов
+```bash
+nano /etc/network/interfaces
+```
+Приведите файл к виду (на скриншоте `enp0s8`/`enp0s9` заменены на `ens224`/`ens256`):
+```ini
+auto ens224
+iface ens224 inet static
+address 172.16.1.1
+netmask 255.255.255.240
+gateway 172.16.1.2
+
+auto ens256
+iface ens256 inet static
+address 172.16.2.1
+netmask 255.255.255.240
+gateway 172.16.2.2
+```
+![Screenshot](assets/3.png)
 
 ### Отключение systemd-resolved
 ```bash
@@ -14,42 +46,8 @@ unlink /etc/resolv.conf
 ```
 
 > [!CAUTION]
-> интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
+> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
----
-
-## Устройство ISP
-
-### Имя устройства
-```bash
-hostnamectl set-hostname isp.au-team.irpo; exec bash
-```
-![Screenshot of hostname ISP.](assets/1.png)
-### Закомментировать загрузку (отключение автоматической загрузки репозиториев)
-```bash
-nano /etc/apt/sources.list
-```
-
-Закомментируйте все строки, кроме необходимых (или приведите к нужному виду согласно заданию).
-
-### Настройка сетевых адресов
-```bash
-nano /etc/network/interfaces
-```
-Приведите файл к виду (замените `enp0s8`/`enp0s9` на актуальные имена интерфейсов):
-```ini
-auto enp0s8
-iface enp0s8 inet static
-address 172.16.1.1
-netmask 255.255.255.240
-gateway 172.16.1.2
-
-auto enp0s9
-iface enp0s9 inet static
-address 172.16.2.1
-netmask 255.255.255.240
-gateway 172.16.2.2
-```
 Перезапустим сеть:
 ```bash
 systemctl restart networking
