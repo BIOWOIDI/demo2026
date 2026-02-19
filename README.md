@@ -58,6 +58,7 @@ systemctl restart networking
 nano /etc/sysctl.conf
 ```
 ![Screenshot](assets/6.png)
+
 Примените изменения:
 ```bash
 sysctl -p
@@ -67,7 +68,7 @@ sysctl -p
 apt install iptables iptables-persistent
 iptables -t nat -A POSTROUTING -s 172.16.1.0/28 -o ens192 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 172.16.2.0/28 -o ens192 -j MASQUERADE
-iptables-save > /etc/iptables/rules.v4
+iptables-save >> /etc/iptables/rules.v4
 ```
 ![Screenshot](assets/7.png)
 > [!CAUTION]
@@ -146,6 +147,7 @@ nameserver 1.1.1.1
 apt install vlan
 ```
 ![Screenshot](assets/9.png)
+
 Дайте поддержку VLAN
 ```bash
 modprobe 8021q
@@ -186,6 +188,7 @@ endpoint 172.16.2.2
 ttl 64
 ```
 ![Screenshot](assets/11.png)
+
 Перезапустите сеть:
 ```bash
 systemctl restart networking
@@ -197,6 +200,7 @@ adduser net_admin
 # Пароль: P@ssw0rd
 ```
 ![Screenshot](assets/23.png)
+
 Выдайте привилегии через `visudo`:
 ```bash
 visudo
@@ -206,12 +210,14 @@ visudo
 net_admin ALL=(ALL:ALL) ALL
 ```
 ![Screenshot](assets/25.png)
+
 ### Переадресация (NAT)
 Раскомментируйте строку `net.ipv4.ip_forward=1` в файле:
 ```bash
 nano /etc/sysctl.conf
 ```
 ![Screenshot](assets/6.png)
+
 Примените изменения:
 ```bash
 sysctl -p
@@ -221,9 +227,10 @@ sysctl -p
 apt install iptables iptables-persistent
 iptables -t nat -A POSTROUTING -s 192.168.1.0/26 -o ens192 -j MASQUERADE
 iptables -t nat -A POSTROUTING -s 192.168.2.0/28 -o ens192 -j MASQUERADE
-iptables-save > /etc/iptables/rules.v4
+iptables-save >> /etc/iptables/rules.v4
 ```
 ![Screenshot](assets/28.png)
+
 > [!CAUTION]
 > Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
@@ -236,6 +243,7 @@ nano /etc/resolv.conf
 nameserver 1.1.1.1
 ```
 ![Screenshot](assets/8.png)
+
 Перезагрузите устройство:
 ```bash
 reboot
@@ -247,6 +255,7 @@ reboot
 echo "ip_gre" >> /etc/modules
 ```
 ![Screenshot](assets/33.png)
+
 Перезапустите сеть:
 ```bash
 systemctl restart networking
@@ -258,11 +267,13 @@ systemctl restart networking
 apt install frr
 ```
 ![Screenshot](assets/34.png)
+
 Включите демон OSPF в `/etc/frr/daemons`:
 ```
 ospfd=yes
 ```
 ![Screenshot](assets/35.png)
+
 Перезапустите FRR:
 ```bash
 systemctl restart frr
@@ -288,17 +299,20 @@ router ospf
  exit
 ```
 ![Screenshot](assets/36.png)
+
 ### DHCP-сервер на HQ-RTR
 Установите DHCP-сервер:
 ```bash
 apt install isc-dhcp-server
 ```
 ![Screenshot](assets/38.png)
+
 Укажите интерфейс в `/etc/default/isc-dhcp-server`:
 ```ini
 INTERFACESv4="ens224:1"
 ```
 ![Screenshot](assets/40.png)
+
 Настройте пул в `/etc/dhcp/dhcpd.conf`:
 ```bash
 nano /etc/dhcp/dhcpd.conf
@@ -315,14 +329,10 @@ subnet 192.168.2.0 netmask 255.255.255.240 {
 }
 ```
 ![Screenshot](assets/41.png)
+
 Перезапустите службу:
 ```bash
 systemctl restart isc-dhcp-server
-```
-
-Перезагрузите устройство:
-```bash
-reboot
 ```
 
 ---
@@ -334,6 +344,7 @@ reboot
 hostnamectl set-hostname br-rtr.au-team.irpo; exec bash
 ```
 ![Screenshot](assets/4.png)
+
 ### Закомментировать загрузку
 ```bash
 nano /etc/apt/sources.list
@@ -380,6 +391,7 @@ endpoint 172.16.1.2
 ttl 64
 ```
 ![Screenshot](assets/16.png)
+
 Перезапустите сеть:
 ```bash
 systemctl restart networking
@@ -394,49 +406,85 @@ nano /etc/resolv.conf
 nameserver 1.1.1.1
 ```
 ![Screenshot](assets/8.png)
+
 ### Добавление пользователя
 ```bash
 adduser net_admin
 # Пароль: P@ssw0rd
-visudo
-# Добавьте: net_admin ALL=(ALL:ALL) ALL
 ```
+![Screenshot](assets/24.png)
+
+Выдайте привилегии через `visudo`:
+```bash
+visudo
+```
+Добавьте строку:
+```
+net_admin ALL=(ALL:ALL) ALL
+```
+![Screenshot](assets/25.png)
 
 ### Переадресация (NAT)
-Раскомментируйте `net.ipv4.ip_forward=1` в `/etc/sysctl.conf`:
+Раскомментируйте строку `net.ipv4.ip_forward=1` в файле:
+```bash
+nano /etc/sysctl.conf
+```
+![Screenshot](assets/6.png)
+
+Примените изменения:
 ```bash
 sysctl -p
 ```
 Установите iptables:
 ```bash
 apt install iptables iptables-persistent
-iptables -t nat -A POSTROUTING -s 192.168.4.0/28 -o enp0s3 -j MASQUERADE
-iptables-save > /etc/iptables/rules.v4
+iptables -t nat -A POSTROUTING -s 192.168.4.0/28 -o ens192 -j MASQUERADE
+iptables-save >> /etc/iptables/rules.v4
 ```
-> ⚠️ **Важно:** замените `enp0s3` на актуальное имя (ens192).
+![Screenshot](assets/29.png)
 
-### Настройка DNS
+> [!CAUTION]
+> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
+
+### Временная настройка DNS серверов 
 ```bash
 nano /etc/resolv.conf
 ```
+Временное содержимое:
 ```
 nameserver 1.1.1.1
 ```
+![Screenshot](assets/8.png)
 
-### Настройка GRE туннеля
+Добавьте модуль `ip_gre` в автозагрузку:
 ```bash
 echo "ip_gre" >> /etc/modules
+```
+![Screenshot](assets/33.png)
+
+Перезапустите сеть:
+```bash
 systemctl restart networking
 ```
 
 ### Динамическая маршрутизация (OSPF)
+Установите FRRouting:
 ```bash
 apt install frr
 ```
-В `/etc/frr/daemons` включите `ospfd=yes`.
+![Screenshot](assets/34.png)
+
+Включите демон OSPF в `/etc/frr/daemons`:
+```
+ospfd=yes
+```
+![Screenshot](assets/35.png)
+
+Перезапустите FRR:
 ```bash
 systemctl restart frr
 ```
+
 Настройка через `vtysh`:
 ```bash
 vtysh
