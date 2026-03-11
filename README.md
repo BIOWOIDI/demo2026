@@ -174,13 +174,7 @@ iface ens224:1 inet static
 address 192.168.2.1
 netmask 255.255.255.224
 
-allow-hotplug
-‎systemctl restart networking
-‎-y на все инсталл команды
-‎systemctl disable убрать
-‎apt-get update до установки bind9
-‎reboot убрать
-‎Hq-rtr маска ens224:1 маска 240 ens224.100
+allow-hotplug ens224.100
 iface ens224.100 inet static
 address 192.168.1.3
 netmask 255.255.255.224
