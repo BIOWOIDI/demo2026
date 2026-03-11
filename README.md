@@ -46,10 +46,8 @@ gateway 172.16.2.2
 ![Screenshot](assets/3.png)
 
 >[!IMPORTANT]
->Отключение systemd-resolved (не использовать, т.к. systemd-resolved нету на виртуалках, но и не стоит забывать что из-за него не обновляеться resolv.conf)
->А вот unlink использовать можно
+>Разрыв связей resolv.conf с остальным 
 >```bash
->systemctl disable --now systemd-resolved
 >unlink /etc/resolv.conf
 >```
 
@@ -97,12 +95,6 @@ nameserver 1.1.1.1
 
 ## Устройство HQ-RTR
 
-> [!CAUTION]
-> Перед началом следует обновить устройство командой
-> ```bash
->apt-get update -y
-> ```
-
 ### Имя устройства
 ```bash
 hostnamectl set-hostname hq-rtr.au-team.irpo; exec bash
@@ -131,16 +123,14 @@ gateway 172.16.1.1
 allow-hotplug ens224
 iface ens224 inet static
 address 192.168.1.1
-netmask 255.255.255.192
+netmask 255.255.255.224
 ```
 > [!CAUTION]
 > Писать именно до этого момента, если заполните все, конфиг будет ругаться на то что нет VLAN, и не сможет скачать VLAN :)
 
 >[!IMPORTANT]
->Отключение systemd-resolved (не использовать, т.к. systemd-resolved нету на виртуалках, но и не стоит забывать что из-за него не обновляеться resolv.conf)
->А вот unlink использовать можно
+>Разрыв связей resolv.conf с остальным 
 >```bash
->systemctl disable --now systemd-resolved
 >unlink /etc/resolv.conf
 >```
 
@@ -153,6 +143,12 @@ nano /etc/resolv.conf
 nameserver 1.1.1.1
 ```
 ![Screenshot](assets/8.png)
+
+> [!CAUTION]
+> Перед началом следует обновить устройство командой
+> ```bash
+>apt-get update -y
+> ```
 
 Установите VLAN:
 ```bash
@@ -173,24 +169,30 @@ nano /etc/network/interfaces
 ```
 Продолжите заполнять содержимое:
 ```bash
-auto ens224:1
+allow-hotplug ens224:1
 iface ens224:1 inet static
 address 192.168.2.1
-netmask 255.255.255.240
+netmask 255.255.255.224
 
-auto ens224.100
+allow-hotplug
+‎systemctl restart networking
+‎-y на все инсталл команды
+‎systemctl disable убрать
+‎apt-get update до установки bind9
+‎reboot убрать
+‎Hq-rtr маска ens224:1 маска 240 ens224.100
 iface ens224.100 inet static
 address 192.168.1.3
-netmask 255.255.255.192
+netmask 255.255.255.224
 vlan_raw_device ens224
 
-auto ens224.200
+allow-hotplug ens224.200
 iface ens224.200 inet static
 address 192.168.2.3
-netmask 255.255.255.240
+netmask 255.255.255.224
 vlan_raw_device ens224:1
 
-auto tun1
+allow-hotplug tun1
 iface tun1 inet tunnel
 address 10.10.0.1
 netmask 255.255.255.252
@@ -233,27 +235,26 @@ net_admin ALL=(ALL:ALL) ALL
 ![Screenshot](assets/25.png)
 
 ### Переадресация (NAT)
-Раскомментируйте строку `net.ipv4.ip_forward=1` в файле:
+Вставляем строку `net.ipv4.ip_forward=1`, читаем файл и применяем в системе:
 ```bash
-nano /etc/sysctl.conf
+echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf; cat /etc/sysctl.conf; sysctl -p
 ```
 ![Screenshot](assets/6.png)
 
-Примените изменения:
-```bash
-sysctl -p
-```
 Установите iptables:
 ```bash
-apt install iptables iptables-persistent
-iptables -t nat -A POSTROUTING -s 192.168.1.0/26 -o ens192 -j MASQUERADE
-iptables -t nat -A POSTROUTING -s 192.168.2.0/28 -o ens192 -j MASQUERADE
+apt install iptables iptables-persistent -y
+iptables -t nat -A POSTROUTING -s 192.168.1.0/27 -o ens192 -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 192.168.2.0/27 -o ens192 -j MASQUERADE
 iptables-save >> /etc/iptables/rules.v4
 ```
 ![Screenshot](assets/28.png)
 
-> [!CAUTION]
-> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
+>[!TIP]
+>Можно посмотрть сохраненные правила через команду:
+>```bash
+>iptables -L -t nat
+>```
 
 ### Временная настройка DNS серверов 
 ```bash
@@ -265,10 +266,9 @@ nameserver 1.1.1.1
 ```
 ![Screenshot](assets/8.png)
 
-Перезагрузите устройство:
-```bash
-reboot
-```
+>[!WARNING]
+>Если вы по какой то причине перезагрузили устройство, не забывайте про команду `sysctl -p` чтобы применить переадресацию NAT
+
 
 ### Настройка GRE туннеля
 Добавьте модуль `ip_gre` в автозагрузку:
@@ -285,7 +285,7 @@ systemctl restart networking
 ### Динамическая маршрутизация (OSPF)
 Установите FRRouting:
 ```bash
-apt install frr
+apt install frr -y
 ```
 ![Screenshot](assets/34.png)
 
@@ -321,14 +321,48 @@ router ospf
 ```
 ![Screenshot](assets/36.png)
 
+>[!WARNING]
+>Пока что я настраиваю frr и ip_gre т.к. нету связанности между srv-шками.
+>тестовые команды
+>```bash
+>vtysh
+>conf t
+>router ospf
+>router-id 10.10.0.1
+>passive-interface default
+>no passive-interface tun1
+>network 192.168.1.0/27 area 0
+>network 192.168.2.0/27 area 0
+>network 10.10.0.0/30 area 0
+>exit
+>interface tun1
+>ip ospf area 0
+>ip ospf authentication
+>ip ospf authentication-key P@ssw0rd
+>exit
+>exit
+>write memory
+>exit
+>```
+>`vtysh -c "show ip ospf neighbor"` соседи OSPF
+>`vtysh -c "show ip route ospf"` таблица маршрутизации
+>`vtysh -c "show running-config"` проверка конфига
+
+>[!IMPORTANT]
+>Иногда виртуалки зависают так как вставка команды идет построчно, это нормально
+
 ### DHCP-сервер на HQ-RTR
 Установите DHCP-сервер:
 ```bash
-apt install isc-dhcp-server
+apt install isc-dhcp-server -y
 ```
 ![Screenshot](assets/38.png)
 
-Укажите интерфейс в `/etc/default/isc-dhcp-server`:
+Укажите интерфейс в конфиге для DHCP:
+```bash
+nano /etc/default/isc-dhcp-server
+```
+То что туда нужно вписать:
 ```ini
 INTERFACESv4="ens224:1"
 ```
@@ -340,8 +374,8 @@ nano /etc/dhcp/dhcpd.conf
 ```
 Добавьте:
 ```
-subnet 192.168.2.0 netmask 255.255.255.240 {
-    range 192.168.2.4 192.168.2.14;
+subnet 192.168.2.0 netmask 255.255.255.224 {
+    range 192.168.2.4 192.168.2.19;
     option domain-name-servers 192.168.1.2;
     option domain-name "au-team.irpo";
     option routers 192.168.2.1;
@@ -355,6 +389,9 @@ subnet 192.168.2.0 netmask 255.255.255.240 {
 ```bash
 systemctl restart isc-dhcp-server
 ```
+
+>[!WARNING]
+>Если вы по какой то причине перезагрузили устройство, не забывайте про команду `sysctl -p` чтобы применить переадресацию NAT
 
 ---
 
@@ -372,18 +409,11 @@ nano /etc/apt/sources.list
 ```
 ![Screenshot](assets/2.png)
 
-Отключение systemd-resolved
-```bash
-systemctl disable --now systemd-resolved
-unlink /etc/resolv.conf
-```
-> [!CAUTION]
-> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
-
-Перезапустим сеть:
-```bash
-systemctl restart networking
-```
+>[!IMPORTANT]
+>Разрыв связей resolv.conf с остальным 
+>```bash
+>unlink /etc/resolv.conf
+>```
 
 ### Настройка адресов
 ```bash
@@ -391,18 +421,18 @@ nano /etc/network/interfaces
 ```
 Пример:
 ```ini
-auto ens192
+allow-hotplug ens192
 iface ens192 inet static
 address 172.16.2.2
 netmask 255.255.255.240
 gateway 172.16.2.1
 
-auto ens224
+allow-hotplug ens224
 iface ens224 inet static
 address 192.168.4.1
 netmask 255.255.255.240
 
-auto tun1
+allow-hotplug tun1
 iface tun1 inet tunnel
 address 10.10.0.2
 netmask 255.255.255.252
@@ -417,6 +447,12 @@ ttl 64
 ```bash
 systemctl restart networking
 ```
+
+> [!CAUTION]
+> Перед продолжением следует обновить устройство командой
+> ```bash
+>apt-get update -y
+> ```
 
 ### Временная настройка DNS серверов 
 ```bash
@@ -435,6 +471,12 @@ adduser net_admin
 ```
 ![Screenshot](assets/24.png)
 
+>[!TIP]
+>Более быстрый способ (экономия = 2 секунды)
+>```bash
+>useradd -p P@ssw0rd net_admin
+>```
+
 Выдайте привилегии через `visudo`:
 ```bash
 visudo
@@ -446,9 +488,9 @@ net_admin ALL=(ALL:ALL) ALL
 ![Screenshot](assets/25.png)
 
 ### Переадресация (NAT)
-Раскомментируйте строку `net.ipv4.ip_forward=1` в файле:
+Вставляем строку `net.ipv4.ip_forward=1`, читаем файл и применяем в системе:
 ```bash
-nano /etc/sysctl.conf
+echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf; cat /etc/sysctl.conf; sysctl -p
 ```
 ![Screenshot](assets/6.png)
 
@@ -458,24 +500,14 @@ sysctl -p
 ```
 Установите iptables:
 ```bash
-apt install iptables iptables-persistent
+apt install iptables iptables-persistent -y
 iptables -t nat -A POSTROUTING -s 192.168.4.0/28 -o ens192 -j MASQUERADE
 iptables-save >> /etc/iptables/rules.v4
 ```
 ![Screenshot](assets/29.png)
 
-> [!CAUTION]
-> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
-
-### Временная настройка DNS серверов 
-```bash
-nano /etc/resolv.conf
-```
-Временное содержимое:
-```
-nameserver 1.1.1.1
-```
-![Screenshot](assets/8.png)
+>[!IMPORTANT]
+>Иногда виртуалки зависают так как вставка команды идет построчно, это нормально
 
 Добавьте модуль `ip_gre` в автозагрузку:
 ```bash
@@ -491,7 +523,7 @@ systemctl restart networking
 ### Динамическая маршрутизация (OSPF)
 Установите FRRouting:
 ```bash
-apt install frr
+apt install frr -y
 ```
 ![Screenshot](assets/34.png)
 
@@ -511,26 +543,50 @@ systemctl restart frr
 vtysh
 conf t
 router ospf
- passive-interface default
- network 192.168.4.0/28 area 0
- network 10.10.0.0/30 area 0
- area 0 authentication
- exit
- interface tun1
-  no ip ospf passive
-  ip ospf authentication
-  ip ospf authentication-key P@ssw0rd
- exit
- exit
- write memory
- exit
+passive-interface default
+network 192.168.4.0/28 area 0
+network 10.10.0.0/30 area 0
+area 0 authentication
+exit
+interface tun1
+no ip ospf passive
+ip ospf authentication
+ip ospf authentication-key P@ssw0rd
+exit
+exit
+write memory
+exit
 ```
 ![Screenshot](assets/37.png)
 
-Перезагрузите устройство:
-```bash
-reboot
-```
+>[!WARNING]
+>Пока что я настраиваю frr и ip_gre т.к. нету связанности между srv-шками.
+>тестовый код
+>```bash
+>vtysh
+>conf t
+>router ospf
+>router-id 10.10.0.2
+>passive-interface default
+>no passive-interface tun1
+>network 192.168.4.0/28 area 0
+>network 10.10.0.0/30 area 0
+>exit
+>interface tun1
+>ip ospf area 0
+>ip ospf authentication
+>ip ospf authentication-key P@ssw0rd
+>exit
+>exit
+>write memory
+>exit
+>```
+>`vtysh -c "show ip ospf neighbor"` соседи OSPF
+>`vtysh -c "show ip route ospf"` таблица маршрутизации
+>`vtysh -c "show running-config"` проверка конфига
+
+>[!WARNING]
+>Если вы по какой то причине перезагрузили устройство, не забывайте про команду `sysctl -p` чтобы применить переадресацию NAT
 
 ---
 
@@ -542,20 +598,17 @@ hostnamectl set-hostname hq-cli.au-team.irpo; exec bash
 ```
 ![Screenshot](assets/17.png)
 
-
 ### Закомментировать загрузку
 ```bash
 nano /etc/apt/sources.list
 ```
 ![Screenshot](assets/2.png)
 
-Отключение systemd-resolved
-```bash
-systemctl disable --now systemd-resolved
-unlink /etc/resolv.conf
-```
-> [!CAUTION]
-> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
+>[!IMPORTANT]
+>Разрыв связей resolv.conf с остальным 
+>```bash
+>unlink /etc/resolv.conf
+>```
 
 ### Настройка адресов (DHCP)
 ```bash
@@ -566,8 +619,6 @@ allow-hotplug ens192
 iface ens192 inet dhcp
 ```
 ![Screenshot](assets/42.png)
-> [!CAUTION]
-> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
 Перезапустите сеть:
 ```bash
@@ -583,6 +634,12 @@ search au-team.irpo
 nameserver 192.168.1.2
 ```
 ![Screenshot](assets/54.png)
+
+> [!CAUTION]
+> Также следует обновить пакеты командой
+> ```bash
+>apt-get update -y
+> ```
 
 ---
 
@@ -600,11 +657,12 @@ nano /etc/apt/sources.list
 ```
 ![Screenshot](assets/2.png)
 
-Отключение systemd-resolved
-```bash
-systemctl disable --now systemd-resolved
-unlink /etc/resolv.conf
-```
+>[!IMPORTANT]
+>Разрыв связей resolv.conf с остальным 
+>```bash
+>unlink /etc/resolv.conf
+>```
+
 ### Временная настройка DNS серверов 
 ```bash
 nano /etc/resolv.conf
@@ -620,21 +678,24 @@ nameserver 1.1.1.1
 nano /etc/network/interfaces
 ```
 ```ini
-auto ens192
+allow-hotplug ens192
 iface ens192 inet static
 address 192.168.1.2
-netmask 255.255.255.192
+netmask 255.255.255.224
 gateway 192.168.1.1
 ```
 ![Screenshot](assets/13.png)
-
-> [!CAUTION]
-> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
 
 Перезапустите сеть:
 ```bash
 systemctl restart networking
 ```
+
+> [!CAUTION]
+> Перед началом следует обновить устройство командой
+> ```bash
+>apt-get update -y
+> ```
 
 ### Добавление пользователя
 ```bash
@@ -671,7 +732,9 @@ Banner /etc/ssh-banner
 nano /etc/ssh-banner
 ```
 ```
+----------------------
 Authorized access only
+----------------------
 ```
 ![Screenshot](assets/32.png)
 
@@ -683,7 +746,7 @@ systemctl restart sshd
 ### Настройка DNS-сервера (BIND9)
 Установите BIND:
 ```bash
-apt install bind9 dnsutils
+apt install bind9 dnsutils -y
 ```
 ![Screenshot](assets/44.png)
 
@@ -809,10 +872,21 @@ named-checkzone 2.168.192.in-addr.arpa /etc/bind/au-team.irpo_hqobr
 systemctl restart bind9
 ```
 
-#### 7. Проверка работы DNS
+>[!IMPORTANT]
+>**На DNS не грешить, конфигурация была проверена много раз с использованием нескольких средств виртуализации, если что-либо идет не так, виновата другая часть конфигурации**
+
+#### 7. Проверка работы DNS (проверка на hq-srv, hq-rtr)
+Переходим в resolv.conf:
+```bash
+nano /etc/resolv.conf
+```
+Вставляем в конфиг:
+```bash
+search au-team.irpo
+nameserver 192.168.1.2
+```
 ```bash
 dig -x 192.168.1.1 @192.168.1.2
-ss -tulpn | grep :53
 ```
 С клиента (HQ-CLI) выполните:
 ```bash
@@ -849,7 +923,7 @@ nameserver 1.1.1.1
 nano /etc/network/interfaces
 ```
 ```ini
-auto ens192
+allow-hotplug ens192
 iface ens192 inet static
 address 192.168.4.2
 netmask 255.255.255.240
@@ -857,13 +931,16 @@ gateway 192.168.4.1
 ```
 ![Screenshot](assets/15.png)
 
-> [!CAUTION]
-> Интерфейсы имеют другие имена (ens224, ens256, ens192). Везде подставляйте их, а не примеры из методички.
-
 Перезапустите сеть:
 ```bash
 systemctl restart networking
 ```
+
+> [!CAUTION]
+> Перед началом следует обновить устройство командой
+> ```bash
+>apt-get update -y
+> ```
 
 ### Добавление пользователя
 ```bash
@@ -912,10 +989,9 @@ systemctl restart sshd
 ---
 
 > [!NOTE]
-> Самое главное, после всего этого, на HQ-RTR, HQ-SRV, HQ-CLI, BR-RTR выставить новый DNS
+> Самое главное, после всего этого, на HQ-RTR, HQ-SRV, HQ-CLI, BR-RTR, BR-SRV выставить новый DNS
 ```
 search au-team.irpo
 nameserver 192.168.1.2
 ```
-
 ![Screenshot](assets/54.png)
