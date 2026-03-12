@@ -9,7 +9,6 @@
 
 ## <details><summary>Настройка ISP</summary>
 <p>
-
 ### Имя устройства
 ```bash
 hostnamectl set-hostname isp.au-team.irpo; exec bash
