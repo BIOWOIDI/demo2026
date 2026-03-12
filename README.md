@@ -3,11 +3,11 @@
 Данное руководство содержит пошаговые инструкции по настройке сетевого оборудования и серверов для демонстрационного экзамена.  
 Все команды выполняются от **root** или с использованием `sudo`.
 
----
 ## <p align="center"><b>МОДУЛЬ 1</b></p>
----
-## <p align="center"><b>Устройство ISP</p>
 
+## <p align="center"><b>Устройство ISP</p>
+<details><summary></summary>
+<p>
 ### Имя устройства
 ```bash
 hostnamectl set-hostname isp.au-team.irpo; exec bash
@@ -78,7 +78,8 @@ nameserver 1.1.1.1
 ![Screenshot](assets/8.png)
 
 ---
-
+</p>
+</details>
 ## Устройство HQ-RTR
 
 ### Имя устройства
@@ -913,6 +914,9 @@ search au-team.irpo
 nameserver 192.168.1.2
 ```
 ![Screenshot](assets/54.png)
+
+timedatectl set-timezone Asia/Tomsk
+нужно настроить через dnsmasq
 
 >[!IMPORTANT]
 >Доп команды: разрыв resolv.conf с остальным 
