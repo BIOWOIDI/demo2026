@@ -7,14 +7,15 @@
 
 ## <p align="center"><b>Устройство ISP</p>
 
-## <details><summary></summary>
-<p>
-
 ### Имя устройства
 ```bash
 hostnamectl set-hostname isp.au-team.irpo; exec bash
 ```
 ![Screenshot](assets/1.png)
+
+<p align="center">
+  <img src="assets/1.png" width="600" />
+</p>
 
 ### Закомментировать загрузку
 ```bash
@@ -80,8 +81,7 @@ nameserver 1.1.1.1
 ![Screenshot](assets/8.png)
 
 ---
-</p>
-</details>
+
 ## Устройство HQ-RTR
 
 ### Имя устройства
