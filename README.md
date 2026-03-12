@@ -5,9 +5,9 @@
 
 ## <p align="center"><b>МОДУЛЬ 1</b></p>
 
-## <p align="center"><b>Устройство ISP</p>
-<details><summary></summary>
+## <details><summary><p align="center"><b>Устройство ISP</p></summary>
 <p>
+
 ### Имя устройства
 ```bash
 hostnamectl set-hostname isp.au-team.irpo; exec bash
