@@ -90,6 +90,10 @@ nameserver 1.1.1.1
 ```
 ![Screenshot](assets/8.png)
 
+### Настройка часового пояса
+```bash
+timedatectl set-timezone Asia/Tomsk
+```
 ---
 ## <p align="center"><b>Устройство HQ-RTR</p>
 
@@ -266,56 +270,34 @@ ospfd=yes
 ```bash
 systemctl restart frr
 ```
+
 Настройте OSPF через `vtysh`:
 ```bash
 vtysh
 conf t
 router ospf
- passive-interface default
- network 192.168.1.0/26 area 0
- network 192.168.2.0/28 area 0
- network 10.10.0.0/30 area 0
- area 0 authentication
- exit
- interface tun1
-  no ip ospf passive
-  ip ospf authentication
-  ip ospf authentication-key P@ssw0rd
- exit
- exit
- write memory
- exit
+router-id 10.10.0.1
+passive-interface default
+network 192.168.1.0/27 area 0
+network 192.168.2.0/27 area 0
+network 10.10.0.0/30 area 0
+exit
+interface tun1
+no ip ospf passive
+ip ospf area 0
+ip ospf authentication
+ip ospf authentication-key P@ssw0rd
+exit
+exit
+write memory
+exit
 ```
-![Screenshot](assets/36.png)
-
->[!WARNING]
->Пока что я настраиваю frr и ip_gre т.к. нету связанности между srv-шками.
->тестовые команды
->```bash
->vtysh
->conf t
->router ospf
->router-id 10.10.0.1
->passive-interface default
->no passive-interface tun1
->network 192.168.1.0/27 area 0
->network 192.168.2.0/27 area 0
->network 10.10.0.0/30 area 0
->exit
->interface tun1
->ip ospf area 0
->ip ospf authentication
->ip ospf authentication-key P@ssw0rd
->exit
->exit
->write memory
->exit
->```
 >`vtysh -c "show ip ospf neighbor"` соседи OSPF
 >
 >`vtysh -c "show ip route ospf"` таблица маршрутизации
 >
 >`vtysh -c "show running-config"` проверка конфига
+![Screenshot](assets/36.png)
 
 ### DHCP-сервер на HQ-RTR
 Установите DHCP-сервер:
@@ -355,8 +337,11 @@ subnet 192.168.2.0 netmask 255.255.255.224 {
 ```bash
 systemctl restart isc-dhcp-server
 ```
+### Настройка часового пояса
+```bash
+timedatectl set-timezone Asia/Tomsk
+```
 
----
 ---
 
 ## <p align="center"><b>Устройство BR-RTR</p>
@@ -482,29 +467,6 @@ systemctl restart frr
 ```
 
 Настройка через `vtysh`:
-```bash
-vtysh
-conf t
-router ospf
-passive-interface default
-network 192.168.4.0/28 area 0
-network 10.10.0.0/30 area 0
-area 0 authentication
-exit
-interface tun1
-no ip ospf passive
-ip ospf authentication
-ip ospf authentication-key P@ssw0rd
-exit
-exit
-write memory
-exit
-```
-![Screenshot](assets/37.png)
-
->[!WARNING]
->Пока что я настраиваю frr и ip_gre т.к. нету связанности между srv-шками.
->тестовый код
 >```bash
 >vtysh
 >conf t
@@ -525,10 +487,17 @@ exit
 >exit
 >```
 >`vtysh -c "show ip ospf neighbor"` соседи OSPF
+>
 >`vtysh -c "show ip route ospf"` таблица маршрутизации
+>
 >`vtysh -c "show running-config"` проверка конфига
+![Screenshot](assets/37.png)
 
----
+### Настройка часового пояса
+```bash
+timedatectl set-timezone Asia/Tomsk
+```
+
 ---
 
 ## <p align="center"><b>Устройство HQ-CLI</p>
@@ -576,7 +545,11 @@ nameserver 192.168.1.2
 >apt-get update -y
 > ```
 
----
+### Настройка часового пояса
+```bash
+timedatectl set-timezone Asia/Tomsk
+```
+
 ---
 
 ## <p align="center"><b>Устройство HQ-SRV</p>
@@ -690,7 +663,7 @@ listen-on-v6 port 53 { any; };
 directory "/var/cache/bind";
 allow-query { any; };
 allow-recursion { any; };
-forwarders { 77.88.8.8; 1.1.1.1; };
+forwarders { 77.88.8.7; 1.1.1.1; };
 forward only;
 dnssec-validation no;
 ```
@@ -824,6 +797,11 @@ nslookup 192.168.1.2
 ```
 ![Screenshot](assets/55.png)
 
+### Настройка часового пояса
+```bash
+timedatectl set-timezone Asia/Tomsk
+```
+
 ---
 
 ## <p align="center"><b>Устройство BR-SRV</p>
@@ -914,6 +892,11 @@ Authorized access only
 Перезапустите SSH:
 ```bash
 systemctl restart sshd
+```
+
+### Настройка часового пояса
+```bash
+timedatectl set-timezone Asia/Tomsk
 ```
 
 ---
