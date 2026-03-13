@@ -9,10 +9,9 @@
 |  | ens224 | 172.16.1.1/28 | - | ISP-HQ |
 |  | ens256 | 172.16.2.1/28 | - | ISP-BR |
 | HQ-RTR | ens192 | 172.16.1.2/28 | 172.16.1.1 | ISP-HQ |
-|  | ens224(VLAN100) | 192.168.1.1/28 | - | SRV-NET |
-|  | ens224(VLAN200) | 192.168.2.1/28 | - | CLI-NET |
-|  | ens224(VLAN300) | 192.168.3.1/29 | - | HQ-NET |
-| HQ-SRV | ens192 | 192.168.1.2/28 | 192.168.1.1 | SRV-NET |
+|  | ens224(VLAN100) | 192.168.1.1/27 | - | SRV-NET |
+|  | ens224(VLAN200) | 192.168.2.1/27 | - | CLI-NET |
+| HQ-SRV | ens192 | 192.168.1.2/27 | 192.168.1.1 | SRV-NET |
 | HQ-CLI | ens192 | DHCP | 192.168.2.1 | CLI-NET |
 | BR-RTR | ens192 | 172.16.2.2/28 | 172.16.2.1 | ISP-BR |
 |  | ens224 | 192.168.4.1/28 | - | BR-NET |
@@ -929,6 +928,15 @@ nameserver 192.168.1.2
 
 timedatectl set-timezone Asia/Tomsk
 нужно настроить через dnsmasq
+Зеркала Яндекса
+```bash
+deb http://mirror.yandex.ru/debian/ bookworm main
+deb-src http://mirror.yandex.ru/debian/ bookworm main
+deb http://mirror.yandex.ru/debian-security bookworm-security main contrib
+deb-src http://mirror.yandex.ru/debian-security bookworm-security main contrib
+deb http://mirror.yandex.ru/debian/ bookworm-updates main contrib
+deb-src http://mirror.yandex.ru/debian/ bookworm-updates main contrib
+```
 
 >[!IMPORTANT]
 >Доп команды: разрыв resolv.conf с остальным 
