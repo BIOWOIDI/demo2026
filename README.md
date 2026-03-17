@@ -295,6 +295,7 @@ exit
 >`vtysh -c "show ip route ospf"` таблица маршрутизации
 >
 >`vtysh -c "show running-config"` проверка конфига
+
 ![Screenshot](assets/36.png)
 
 ### DHCP-сервер на HQ-RTR
